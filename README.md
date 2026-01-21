@@ -30,7 +30,7 @@ Server runs on `http://localhost:8080`
 
 ### REST Endpoints
 
-See [api_endpoints.md](./docs/api_endpoints.md) for complete endpoint documentation.
+See [http://localhost:8080/api-docs](http://localhost:8080/api-docs) for complete endpoint documentation.
 
 **Base URL**: `http://localhost:8080/api`
 
@@ -43,7 +43,7 @@ Example endpoints:
 
 ### SignalR Hubs
 
-See [realtime_api.md](./docs/realtime_api.md) for WebSocket documentation.
+See [http://localhost:8080/websocket-test.html](http://localhost:8080/websocket-test.html) for WebSocket documentation.
 
 **User Hub**: `ws://localhost:8080/hubs/user`  
 **Market Hub**: `ws://localhost:8080/hubs/market`
