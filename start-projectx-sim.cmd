@@ -14,28 +14,28 @@ REM Change to the script directory
 cd /d "%SCRIPT_DIR%"
 
 echo.
-echo 🔨 Building ProjectX-Sim for production...
-echo 📂 Working directory: %SCRIPT_DIR%
+echo Building ProjectX-Sim...
+echo Working directory: %SCRIPT_DIR%
 echo.
 
 REM Clean previous build
 if exist "dist" (
-    echo 📁 Cleaning previous build...
+    echo Cleaning previous build...
     rmdir /s /q dist
 )
 
 REM Build TypeScript to JavaScript
-echo 🔧 Compiling TypeScript...
+echo Compiling TypeScript...
 call npm run build
 if errorlevel 1 (
-    echo ❌ Build failed!
+    echo Build failed!
     exit /b 1
 )
 
 echo.
-echo ✅ Build complete!
+echo Build complete!
 echo.
-echo 🚀 Starting server in production mode...
+echo Starting server in production mode...
 echo    Mode: relaxed
 echo    Host: localhost
 echo    Port: 8080
