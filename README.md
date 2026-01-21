@@ -2,6 +2,8 @@
 
 Mock broker server for testing the ProjectX trading API. Provides both REST API endpoints and real-time SignalR WebSocket connections.
 
+Based on the api docs from [ProjectX Gateway API](https://gateway.docs.projectx.com/docs/intro)
+
 ## Features
 
 ✅ **19 REST API Endpoints** - Complete mirror of ProjectX Gateway API  
