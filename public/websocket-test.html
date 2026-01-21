@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProjectX-Sim WebSocket Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        h2 {
+            color: #555;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .connected {
+            background: #d4edda;
+            color: #155724;
+        }
+        .disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        #events {
+            max-height: 400px;
+            overflow-y: auto;
+            background: #f9f9f9;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+        .event {
+            padding: 5px;
+            margin: 5px 0;
+            border-left: 3px solid #4CAF50;
+            background: white;
+        }
+        .event.order { border-left-color: #2196F3; }
+        .event.position { border-left-color: #FF9800; }
+        .event.trade { border-left-color: #9C27B0; }
+        .event.quote { border-left-color: #00BCD4; }
+        input[type="number"] {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔌 ProjectX-Sim WebSocket Test Client</h1>
+    
+    <!-- User Hub -->
+    <div class="container">
+        <h2>User Hub (ws://localhost:8080/hubs/user)</h2>
+        <div id="userStatus" class="status disconnected">Disconnected</div>
+        <div>
+            <button id="connectUser">Connect</button>
+            <button id="disconnectUser" disabled>Disconnect</button>
+        </div>
+        <div>
+            <label>Account ID: <input type="number" id="accountId" value="1" min="1" max="15"></label>
+            <button id="subAccounts" disabled>Subscribe Accounts</button>
+            <button id="subOrders" disabled>Subscribe Orders</button>
+            <button id="subPositions" disabled>Subscribe Positions</button>
+            <button id="subTrades" disabled>Subscribe Trades</button>
+        </div>
+    </div>
+
+    <!-- Market Hub -->
+    <div class="container">
+        <h2>Market Hub (ws://localhost:8080/hubs/market)</h2>
+        <div id="marketStatus" class="status disconnected">Disconnected</div>
+        <div>
+            <button id="connectMarket">Connect</button>
+            <button id="disconnectMarket" disabled>Disconnect</button>
+        </div>
+        <div>
+            <label>Contract: 
+                <select id="contractId">
+                    <option value="CON.F.US.EP.H25">E-mini S&P 500</option>
+                    <option value="CON.F.US.NQ.H25">E-mini NASDAQ</option>
+                    <option value="CON.F.US.RTY.H25">E-mini Russell 2000</option>
+                </select>
+            </label>
+            <button id="subQuotes" disabled>Subscribe Quotes</button>
+            <button id="subMarketTrades" disabled>Subscribe Trades</button>
+            <button id="subDepth" disabled>Subscribe Depth</button>
+        </div>
+    </div>
+
+    <!-- Events Log -->
+    <div class="container">
+        <h2>Events Log</h2>
+        <button id="clearEvents">Clear Log</button>
+        <div id="events"></div>
+    </div>
+
+    <script>
+        let userWs = null;
+        let marketWs = null;
+
+        // User Hub Connection
+        document.getElementById('connectUser').addEventListener('click', () => {
+            userWs = new WebSocket('ws://localhost:8080/hubs/user');
+            
+            userWs.onopen = () => {
+                document.getElementById('userStatus').textContent = 'Connected';
+                document.getElementById('userStatus').className = 'status connected';
+                document.getElementById('connectUser').disabled = true;
+                document.getElementById('disconnectUser').disabled = false;
+                document.getElementById('subAccounts').disabled = false;
+                document.getElementById('subOrders').disabled = false;
+                document.getElementById('subPositions').disabled = false;
+                document.getElementById('subTrades').disabled = false;
+                addEvent('User Hub connected', 'system');
+            };
+
+            userWs.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                if (data.type === 'event') {
+                    const eventType = data.event.replace('GatewayUser', '').toLowerCase();
+                    addEvent(`${data.event}: ${JSON.stringify(data.data, null, 2)}`, eventType);
+                }
+            };
+
+            userWs.onclose = () => {
+                document.getElementById('userStatus').textContent = 'Disconnected';
+                document.getElementById('userStatus').className = 'status disconnected';
+                document.getElementById('connectUser').disabled = false;
+                document.getElementById('disconnectUser').disabled = true;
+                document.getElementById('subAccounts').disabled = true;
+                document.getElementById('subOrders').disabled = true;
+                document.getElementById('subPositions').disabled = true;
+                document.getElementById('subTrades').disabled = true;
+                addEvent('User Hub disconnected', 'system');
+            };
+        });
+
+        document.getElementById('disconnectUser').addEventListener('click', () => {
+            if (userWs) userWs.close();
+        });
+
+        document.getElementById('subAccounts').addEventListener('click', () => {
+            userWs.send(JSON.stringify({ type: 'invoke', method: 'SubscribeAccounts', arguments: [] }));
+            addEvent('Subscribed to accounts', 'system');
+        });
+
+        document.getElementById('subOrders').addEventListener('click', () => {
+            const accountId = parseInt(document.getElementById('accountId').value);
+            userWs.send(JSON.stringify({ type: 'invoke', method: 'SubscribeOrders', arguments: [accountId] }));
+            addEvent(`Subscribed to orders for account ${accountId}`, 'system');
+        });
+
+        document.getElementById('subPositions').addEventListener('click', () => {
+            const accountId = parseInt(document.getElementById('accountId').value);
+            userWs.send(JSON.stringify({ type: 'invoke', method: 'SubscribePositions', arguments: [accountId] }));
+            addEvent(`Subscribed to positions for account ${accountId}`, 'system');
+        });
+
+        document.getElementById('subTrades').addEventListener('click', () => {
+            const accountId = parseInt(document.getElementById('accountId').value);
+            userWs.send(JSON.stringify({ type: 'invoke', method: 'SubscribeTrades', arguments: [accountId] }));
+            addEvent(`Subscribed to trades for account ${accountId}`, 'system');
+        });
+
+        // Market Hub Connection
+        document.getElementById('connectMarket').addEventListener('click', () => {
+            marketWs = new WebSocket('ws://localhost:8080/hubs/market');
+            
+            marketWs.onopen = () => {
+                document.getElementById('marketStatus').textContent = 'Connected';
+                document.getElementById('marketStatus').className = 'status connected';
+                document.getElementById('connectMarket').disabled = true;
+                document.getElementById('disconnectMarket').disabled = false;
+                document.getElementById('subQuotes').disabled = false;
+                document.getElementById('subMarketTrades').disabled = false;
+                document.getElementById('subDepth').disabled = false;
+                addEvent('Market Hub connected', 'system');
+            };
+
+            marketWs.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                if (data.type === 'event') {
+                    const eventType = data.event.replace('Gateway', '').toLowerCase();
+                    addEvent(`${data.event} (${data.contractId}): ${JSON.stringify(data.data, null, 2)}`, eventType);
+                }
+            };
+
+            marketWs.onclose = () => {
+                document.getElementById('marketStatus').textContent = 'Disconnected';
+                document.getElementById('marketStatus').className = 'status disconnected';
+                document.getElementById('connectMarket').disabled = false;
+                document.getElementById('disconnectMarket').disabled = true;
+                document.getElementById('subQuotes').disabled = true;
+                document.getElementById('subMarketTrades').disabled = true;
+                document.getElementById('subDepth').disabled = true;
+                addEvent('Market Hub disconnected', 'system');
+            };
+        });
+
+        document.getElementById('disconnectMarket').addEventListener('click', () => {
+            if (marketWs) marketWs.close();
+        });
+
+        document.getElementById('subQuotes').addEventListener('click', () => {
+            const contractId = document.getElementById('contractId').value;
+            marketWs.send(JSON.stringify({ type: 'invoke', method: 'SubscribeContractQuotes', arguments: [contractId] }));
+            addEvent(`Subscribed to quotes for ${contractId}`, 'system');
+        });
+
+        document.getElementById('subMarketTrades').addEventListener('click', () => {
+            const contractId = document.getElementById('contractId').value;
+            marketWs.send(JSON.stringify({ type: 'invoke', method: 'SubscribeContractTrades', arguments: [contractId] }));
+            addEvent(`Subscribed to trades for ${contractId}`, 'system');
+        });
+
+        document.getElementById('subDepth').addEventListener('click', () => {
+            const contractId = document.getElementById('contractId').value;
+            marketWs.send(JSON.stringify({ type: 'invoke', method: 'SubscribeContractMarketDepth', arguments: [contractId] }));
+            addEvent(`Subscribed to depth for ${contractId}`, 'system');
+        });
+
+        document.getElementById('clearEvents').addEventListener('click', () => {
+            document.getElementById('events').innerHTML = '';
+        });
+
+        function addEvent(message, type = '') {
+            const eventsDiv = document.getElementById('events');
+            const eventDiv = document.createElement('div');
+            eventDiv.className = 'event ' + type;
+            eventDiv.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong> - ${message}`;
+            eventsDiv.insertBefore(eventDiv, eventsDiv.firstChild);
+            
+            // Keep only last 100 events
+            if (eventsDiv.children.length > 100) {
+                eventsDiv.removeChild(eventsDiv.lastChild);
+            }
+        }
+    </script>
+</body>
+</html>
