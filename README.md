@@ -79,8 +79,6 @@ projectx-sim/
 │   ├── hubs/                    # SignalR hub implementations
 │   │   ├── UserHub.ts
 │   │   └── MarketHub.ts
-│   ├── middleware/
-│   │   └── auth.ts              # Auth middleware
 │   └── utils/
 │       ├── logger.ts
 │       └── helpers.ts
